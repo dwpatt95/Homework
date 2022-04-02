@@ -1,0 +1,67 @@
+#! /bin/bash
+
+# if the user id equals 0 say dont run as root
+if [ $UID -eq 0 ]; then
+	echo "please do not run this script as root."
+	exit
+fi
+
+#
+ip=$(ip addr | grep inet | tail -2 | head -1)
+execs=$(sudo find /home -type f -perm 777 2>/dev/null)
+#makes the path to sys_info.txt as a variable called output
+output=$HOME/research/sys_info.txt
+
+#makes a research directory if one doesnt exist
+if [! -d $HOME/research ]; then
+	mkdir $HOME/research
+fi
+
+if [ -f $output ]; then
+	rm $output
+fi
+
+# checks permissions for sensitive files
+files=('/etc/passwd' '/etc/shadow')
+echo -e "\nThe permissions for sensitive /etc files: \n" >> $output
+for file in ${files[@]}
+do
+ls -l $file >> $output
+done
+
+#checks sudo privs
+for user in $(ls /home)
+do
+  sudo -Lu $user
+done
+
+#create list that contains date uname -a and hostname -s
+commands=('date' 'uname -a' 'hostname -s')
+for x in {0..2}
+do
+	results=$(${commands[$x]})
+	echo "results of \"${commands[$x]}\"command:"
+	echo $results
+	echo ""
+done
+
+# shows all the system info
+echo System Information for $(date) >"$output"
+
+echo  uname info: $(uname -a) >> "$output"
+
+echo  Ip address: $(hostname -I) >> "$output"
+
+echo  hostname: $(hostname) >> "$output"
+
+mkdir ~/research 2> /dev/null >> "$output"
+
+echo 777 Files: >> "$output"
+
+find / -type f -perm 777 >> "$output"
+
+echo Top 10 Processes >> "$output"
+
+ps aux -m | awk {'print $1, $2, $3, $4, $11'} | head >> "$output"
+
+
